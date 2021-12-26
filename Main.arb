@@ -2,8 +2,6 @@
 
 require 'roo'
 
-testarr =  Array.new(6){Array.new}
-
 class XlsxFile
     attr_accessor :path, :file, :table, :row
 
@@ -11,32 +9,46 @@ class XlsxFile
         @path = path
         @file = Roo::Spreadsheet.open("#@path")
         @file = Roo::Excelx.new("#@path", {:expand_merged_ranges => true})
-
         @table =  nil
-        @row = Array.new(6)
+        @row = nil
+        self.initialize_table
     end
 
     def initialize_table
         @file.each_with_pagename do |name, sh|
             if sh.first_row != nil then
                 @sheet = sh
-                
-                @table =  Array.new(sh.last_row  - sh.first_row + 1){Array.new(sh.last_column  - sh.first_column + 1)}
+
+                @table =  Array.new(sh.last_row - sh.first_row + 1){Array.new(sh.last_column - sh.first_column + 1)}
+                @row = Array.new(sh.last_row - sh.first_row + 1)
 
                 rowCnt = 0
                 colCnt = 0
+                flag = 0
+                row_to_remove = -1
 
                 sh.first_row.upto(sh.last_row) do |row|
 
                     sh.first_column.upto(sh.last_column) do |column|
                         @table[rowCnt][colCnt] = sh.cell(row, column)
+
+                        if (sh.formula(row, column).to_s.include? "SUBTOTAL") || (sh.formula(row, column).to_s.include? "SUM")#TOTAL
+                            flag = 1
+                        end
+
                         colCnt += 1
+                    end
+
+                    if flag == 1 then
+                        row_to_remove = rowCnt
+                        @table.delete_at(row_to_remove)
                     end
 
                     rowCnt += 1
                     colCnt = 0
 
                 end
+
             end
         end
     end
@@ -52,10 +64,11 @@ class XlsxFile
 end
 
 xl = XlsxFile.new('testFile.xlsx')
-puts xl.file.info
-xl.initialize_table
-
+#puts xl.file.info
+#xl.initialize_table
 p xl.table
+
+#p xl.table[3][2]
 #p xl.row(2)[3]
 # xl.each do |cell|
 #     p cell
