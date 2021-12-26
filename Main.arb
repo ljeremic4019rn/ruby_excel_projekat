@@ -1,25 +1,29 @@
 # D:\sj_ruby_domacizadatak\sj_ruby_domacizadatak/xlsx_app.arb
 
 require 'roo'
+require 'spreadsheet'
+
 
 class XlsxFile
-    attr_accessor :path, :file, :table, :row
+    attr_accessor :path, :file, :table, :table2, :row
 
     def initialize(path)
         @path = path
-        @file = Roo::Spreadsheet.open("#@path")
+       # @file = Roo::Spreadsheet.open("#@path")
         @file = Roo::Excelx.new("#@path", {:expand_merged_ranges => true})
         @table =  nil
+        @table2 = nil
+        @tableTmp = nil
         @row = nil
-        self.initialize_table
+        self.initialize_table(nil, @file)
     end
 
-    def initialize_table
-        @file.each_with_pagename do |name, sh|
+    def initialize_table(bool, file)
+        file.each_with_pagename do |name, sh|
             if sh.first_row != nil then
                 @sheet = sh
 
-                @table =  Array.new(sh.last_row - sh.first_row + 1){Array.new(sh.last_column - sh.first_column + 1)}
+                @tableTmp =  Array.new(sh.last_row - sh.first_row + 1){Array.new(sh.last_column - sh.first_column + 1)}
                 @row = Array.new(sh.last_row - sh.first_row + 1)
 
                 rowCnt = 0
@@ -30,7 +34,7 @@ class XlsxFile
                 sh.first_row.upto(sh.last_row) do |row|
 
                     sh.first_column.upto(sh.last_column) do |column|
-                        @table[rowCnt][colCnt] = sh.cell(row, column)
+                        @tableTmp[rowCnt][colCnt] = sh.cell(row, column)
 
                         if (sh.formula(row, column).to_s.include? "SUBTOTAL") || (sh.formula(row, column).to_s.include? "SUM")#TOTAL
                             flag = 1
@@ -41,16 +45,21 @@ class XlsxFile
 
                     if flag == 1 then
                         row_to_remove = rowCnt
-                        @table.delete_at(row_to_remove)
+                        @tableTmp.delete_at(row_to_remove)
                     end
 
                     rowCnt += 1
                     colCnt = 0
 
-                end
-
+                end             
             end
         end
+        if bool == 1 
+             @table2 = @tableTmp 
+        else 
+            @table = @tableTmp
+        end
+       
     end
 
     def row(nr)
@@ -61,12 +70,41 @@ class XlsxFile
         @table.each(&block)
     end
 
+    def copyTable #xlsx
+        book2 = Roo::Excelx.new("testFile2.xlsx", {:expand_merged_ranges => true})
+        initialize_table(1,book2)
+
+        p table
+        p table2
+
+        # book1 = Spreadsheet.open('test.xls')
+
+
+        #     for i in 0..5 do
+        #         for j in 0..5 do
+        #             book1.worksheet(0).rows[2][1] = "xxxxx"
+        #         end            
+        #    end
+
+        # new_row_index = book1.worksheet(0).last_row_index + 1
+        
+        # puts new_row_index
+
+        #book1.worksheet(0).rows[2][1] = "xxxxx"
+                
+        #open_book1.write('testFile1.xlsx')
+    end
+
+
 end
 
-xl = XlsxFile.new('testFile.xlsx')
+xl = XlsxFile.new('testFile1.xlsx')
 #puts xl.file.info
 #xl.initialize_table
-p xl.table
+
+# p xl.table
+
+xl.copyTable
 
 #p xl.table[3][2]
 #p xl.row(2)[3]
