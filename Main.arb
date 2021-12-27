@@ -2,10 +2,17 @@
 
 require 'roo'
 require 'spreadsheet'
+require 'rubyXL'
+require 'rubyXL/convenience_methods'
 
+require 'rubyXL/convenience_methods/cell'
+require 'rubyXL/convenience_methods/color'
+require 'rubyXL/convenience_methods/font'
+require 'rubyXL/convenience_methods/workbook'
+require 'rubyXL/convenience_methods/worksheet'
 
 class XlsxFile
-    attr_accessor :path, :file, :table, :table2, :row
+    attr_accessor :path, :file, :table, :table2, :row, :tableBorders
 
     def initialize(path)
         @path = path
@@ -15,13 +22,24 @@ class XlsxFile
         @table2 = nil
         @tableTmp = nil
         @row = nil
+        @tableBorders =  Array.new(3)#prvi red, prva kolona, poslednji red, poslednja kolona
+
         self.initialize_table(nil, @file)
     end
 
     def initialize_table(bool, file)
+        lastRow = nil
+        lastColumn = nil
+        firstRow = nil
+        firstColumn = nil
         file.each_with_pagename do |name, sh|
-            if sh.first_row != nil then
+            if sh.first_row != nil then        
                 @sheet = sh
+                
+                lastRow = sh.last_row
+                lastColumn = sh.last_column
+                firstRow = sh.first_row
+                firstColumn = sh.first_column
 
                 @tableTmp =  Array.new(sh.last_row - sh.first_row + 1){Array.new(sh.last_column - sh.first_column + 1)}
                 @row = Array.new(sh.last_row - sh.first_row + 1)
@@ -46,6 +64,7 @@ class XlsxFile
                     if flag == 1 then
                         row_to_remove = rowCnt
                         @tableTmp.delete_at(row_to_remove)
+                        #lastRow -= 1 #ovo mozda da se vrati, ako nam je nebitan red sa total i subtotal
                     end
 
                     rowCnt += 1
@@ -58,6 +77,11 @@ class XlsxFile
              @table2 = @tableTmp 
         else 
             @table = @tableTmp
+            @tableBorders[0] = firstRow
+            @tableBorders[1] = firstColumn
+            @tableBorders[2] = lastRow
+            @tableBorders[3] = lastColumn
+
         end
        
     end
@@ -70,12 +94,77 @@ class XlsxFile
         @table.each(&block)
     end
 
-    def copyTable #xlsx
-        book2 = Roo::Excelx.new("testFile2.xlsx", {:expand_merged_ranges => true})
+    def copyTableX(secondTablePath) #xlsx
+        book2 = Roo::Excelx.new(secondTablePath, {:expand_merged_ranges => true})
         initialize_table(1,book2)
+
+        unless table[0] == table2[0]
+            puts "tabele nisu iste"
+            return
+        end
+
+        # p table
+        # p table2
+
+        workbook = RubyXL::Parser.parse(@path)#ne zaboravi write
+        worksheet = workbook[1]
+        width = table2[0].length
+        hight =  table2.length
+
+        for i in 1..hight-1 do#red
+            for j in 0..width-1 do#kolona
+                worksheet.add_cell(tableBorders[2] + i -1, tableBorders[1] + j -1, table2[i][j])
+            end            
+        end
+
+        workbook.write(@path)        
+    end
+
+    def removeTableX(secondTablePath)
+        book2 = Roo::Excelx.new(secondTablePath, {:expand_merged_ranges => true})
+        initialize_table(1,book2)
+
+        unless table[0] == table2[0]
+            puts "tabele nisu iste"
+            return
+        end
 
         p table
         p table2
+
+        secondTableRows = []#redovi gde se nalazi tabela 2 u tabeli 1
+
+        i = tableBorders[0]-1
+        table.each do |row|
+            i+=1
+            if row == table2[1]
+                secondTableRows << i
+                #puts "nasli ga u #{i}"
+            end
+        end
+
+
+        workbook = RubyXL::Parser.parse(@path)#ne zaboravi write
+        worksheet = workbook[1]
+
+        for j in 0..secondTableRows.length() do#kolona
+            worksheet.delete_row(secondTableRows[0]-1)
+        end            
+
+        workbook.write(@path)  
+    end
+
+    def insert_rowX(row, sheetNumber, filePath) #ispod reda ubacuje
+        workbook = RubyXL::Parser.parse(filePath) 
+        worksheet = workbook[sheetNumber-1]
+        worksheet.insert_row(row)
+        workbook.write(filePath)  
+    end
+
+
+
+    def copyTableS
+
 
         # book1 = Spreadsheet.open('test.xls')
 
@@ -96,6 +185,7 @@ class XlsxFile
     end
 
 
+
 end
 
 xl = XlsxFile.new('testFile1.xlsx')
@@ -104,10 +194,7 @@ xl = XlsxFile.new('testFile1.xlsx')
 
 # p xl.table
 
-xl.copyTable
+#xl.copyTableX('testFile2.xlsx')
+#xl.removeTableX('testFile2.xlsx')
+xl.insert_rowX(9,2,"testFile1.xlsx")
 
-#p xl.table[3][2]
-#p xl.row(2)[3]
-# xl.each do |cell|
-#     p cell
-# end
