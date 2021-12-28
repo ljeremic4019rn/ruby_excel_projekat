@@ -190,11 +190,41 @@ class XlsxFile
         workbook.write(@path)  
     end
 
+    def nillRowKiller
+        nilCounter = 0
+        rowCnt = -1
+
+        table.each do |row|#trazimo red koji ima nil u sebi
+            rowCnt += 1;
+            #puts row
+            if row.include? nil
+              #  puts "nasli nil u redu #{rowCnt}"
+                row.each do |cell|#kada nadjemo nil prodjemo i proverimo da li je ceo red nil
+                    if cell == nil 
+                         nilCounter += 1    
+                    end              
+                end
+            end
+
+            #puts "counter #{nilCounter} length #{table[0].length}"
+
+            if nilCounter ==  table[0].length#ceo red je nil, znaci da je ukrasni red i da treba da se skloni
+                table.delete_at(rowCnt)
+
+                column_table.each_value do |array| #nakon sto obrisemo iz matrice, obrisemo i iz column_table
+                    array.delete_at(rowCnt-1)
+                end
+
+            end            
+            nilCounter = 0
+        end
+        
+    end
+
 
 end
 
 class Column < Array#6
-
     def sum
         sum = 0
 
@@ -206,25 +236,28 @@ class Column < Array#6
 
         sum
     end
-
 end
 
 
-xl = XlsxFile.new('testFile1.xlsx')
+xlsx = XlsxFile.new('testFile1.xlsx')
+xlsx.nillRowKiller
+
+# p xlsx.table
+# p xlsx.column_table
+# puts "\n-----------------\n"
+# xlsx.nillRowKiller
+# p xlsx.table
+# p xlsx.column_table
 
 
-p xl.table
-p xl.column_table
+# p xlsx.row(1)
 
-# p xl.row(1)
-
-# xl.each do |cell|
+# xlsx.each do |cell|
 #     p cell
 # end
 
-# p xl.column_table["prva"]
-# p xl.column_table["prva"][3]
+# p xlsx.column_table["prva"]
+# p xlsx.column_table["prva"][3]
 
-# xl.copyTable('testFile2.xlsx')
-# xl.removeTable('testFile2.xlsx')
-
+# xlsx.copyTable('testFile2.xlsx')
+# xlsx.removeTable('testFile2.xlsx')
