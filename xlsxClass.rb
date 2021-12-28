@@ -1,5 +1,3 @@
-# D:\sj_ruby_domacizadatak\sj_ruby_domacizadatak/xlsx_app.arb
-
 require 'roo'
 require 'spreadsheet'
 require 'rubyXL'
@@ -12,22 +10,22 @@ require 'rubyXL/convenience_methods/workbook'
 require 'rubyXL/convenience_methods/worksheet'
 
 class XlsxFile
-    attr_accessor :path, :file, :table, :table2, :row, :tableBorders
+    attr_accessor :path, :file, :table, :table2, :column_table, :row, :tableBorders
 
-    def initialize(path)
+    def initialize(path)#1
         @path = path
-       # @file = Roo::Spreadsheet.open("#@path")
-        @file = Roo::Excelx.new("#@path", {:expand_merged_ranges => true})
+        @file = Roo::Excelx.new("#@path", {:expand_merged_ranges => true})#5
         @table =  nil
         @table2 = nil
-        @tableTmp = nil
+        @column_table = nil
         @row = nil
         @tableBorders =  Array.new(3)#prvi red, prva kolona, poslednji red, poslednja kolona
 
-        self.initialize_table(nil, @file)
+        self.load_column_table
+        self.load_table(nil, @file)
     end
 
-    def initialize_table(bool, file)
+    def load_table(bool, file)#2
         lastRow = nil
         lastColumn = nil
         firstRow = nil
@@ -54,7 +52,7 @@ class XlsxFile
                     sh.first_column.upto(sh.last_column) do |column|
                         @tableTmp[rowCnt][colCnt] = sh.cell(row, column)
 
-                        if (sh.formula(row, column).to_s.include? "SUBTOTAL") || (sh.formula(row, column).to_s.include? "SUM")#TOTAL
+                        if (sh.formula(row, column).to_s.include? "SUBTOTAL") || (sh.formula(row, column).to_s.include? "SUM")#TOTAL #8
                             flag = 1
                         end
 
@@ -82,21 +80,59 @@ class XlsxFile
             @tableBorders[2] = lastRow
             @tableBorders[3] = lastColumn
 
-        end
-       
+        end       
     end
 
-    def row(nr)
+    def load_column_table #6
+        @file.each_with_pagename do |name, sh|
+            if sh.first_column != nil then
+                @column_table = Hash[]
+                @row = Array.new(sh.last_row - sh.first_row + 1)
+
+                flag = 0
+                col_name = ""
+
+                sh.first_column.upto(sh.last_column) do |column|
+                    col_to_add = Column.new
+
+                    sh.first_row.upto(sh.last_row) do |row|
+
+                        if row == sh.first_row then
+                            col_name = sh.cell(row, column)
+                            column_table[col_name] = nil
+                        else
+                            col_to_add << sh.cell(row, column)
+                        end
+
+                        if (sh.formula(row, column).to_s.include? "SUBTOTAL") || (sh.formula(row, column).to_s.include? "SUM")#8
+                            flag = 1
+                        end
+
+                    end
+
+                    column_table[col_name] = col_to_add
+                end
+
+                if flag == 1 then
+                    column_table.each_value do |array|
+                        array.pop
+                    end
+                end
+            end
+        end
+    end    
+
+    def row(nr)#3
         @row = table[nr]
     end
 
-    def each(&block)
+    def each(&block)#4
         @table.each(&block)
     end
 
-    def copyTableX(secondTablePath) #xlsx
+    def copyTable(secondTablePath) #9
         book2 = Roo::Excelx.new(secondTablePath, {:expand_merged_ranges => true})
-        initialize_table(1,book2)
+        load_table(1,book2)
 
         unless table[0] == table2[0]
             puts "tabele nisu iste"
@@ -120,9 +156,9 @@ class XlsxFile
         workbook.write(@path)        
     end
 
-    def removeTableX(secondTablePath)
+    def removeTable(secondTablePath)#10
         book2 = Roo::Excelx.new(secondTablePath, {:expand_merged_ranges => true})
-        initialize_table(1,book2)
+        load_table(1,book2)
 
         unless table[0] == table2[0]
             puts "tabele nisu iste"
@@ -154,47 +190,41 @@ class XlsxFile
         workbook.write(@path)  
     end
 
-    def insert_rowX(row, sheetNumber, filePath) #ispod reda ubacuje
-        workbook = RubyXL::Parser.parse(filePath) 
-        worksheet = workbook[sheetNumber-1]
-        worksheet.insert_row(row)
-        workbook.write(filePath)  
-    end
-
-
-
-    def copyTableS
-
-
-        # book1 = Spreadsheet.open('test.xls')
-
-
-        #     for i in 0..5 do
-        #         for j in 0..5 do
-        #             book1.worksheet(0).rows[2][1] = "xxxxx"
-        #         end            
-        #    end
-
-        # new_row_index = book1.worksheet(0).last_row_index + 1
-        
-        # puts new_row_index
-
-        #book1.worksheet(0).rows[2][1] = "xxxxx"
-                
-        #open_book1.write('testFile1.xlsx')
-    end
-
-
 
 end
 
+class Column < Array#6
+
+    def sum
+        sum = 0
+
+        self.each do |el|
+            if el != nil then
+                sum += el.to_i
+            end
+        end
+
+        sum
+    end
+
+end
+
+
 xl = XlsxFile.new('testFile1.xlsx')
-#puts xl.file.info
-#xl.initialize_table
 
-# p xl.table
 
-#xl.copyTableX('testFile2.xlsx')
-#xl.removeTableX('testFile2.xlsx')
-xl.insert_rowX(9,2,"testFile1.xlsx")
+p xl.table
+p xl.column_table
+
+# p xl.row(1)
+
+# xl.each do |cell|
+#     p cell
+# end
+
+# p xl.column_table["prva"]
+# p xl.column_table["prva"][3]
+
+# xl.copyTable('testFile2.xlsx')
+# xl.removeTable('testFile2.xlsx')
 
