@@ -65,7 +65,6 @@ class XlsFile
           end
       end
       if bool == 1 
-          puts "ovde smo"
            @table2 = @tableTmp 
       else 
           @table = @tableTmp
@@ -120,26 +119,26 @@ class XlsFile
       @table.each(&block)
   end
 
-  def copyTable#(secondTablePath) 
+  def copyTable#(secondTablePath, sheet_num) 
     book2 = Roo::Spreadsheet.open("test2.xls")
     load_table(1,book2)
 
-    # unless table[0] == table2[0]
-    #     puts "tabele nisu iste"
-    #     return
-    # end
+    unless table[0] == table2[0]
+        puts "tabele nisu iste"
+        return
+    end
 
-    p table
-    p table2
+    # p table
+    # p table2
 
     workbook = Spreadsheet.open 'test.xls'
     worksheet = workbook.worksheets[1]
     width = table2[0].length
-    hight =  table2.length
+    height =  table2.length
 
-    worksheet.row(tableBorders[2]+hight+10).insert 1
+    worksheet.row(tableBorders[2]+height+10).insert 1
 
-    for i in 1..hight-1 do#red
+    for i in 1..height-1 do#red
         for j in 0..width-1 do#kolona
             #worksheet.add_cell(tableBorders[2] + i -1, tableBorders[1] + j -1, table2[i][j])                       
 			 worksheet.rows[tableBorders[2] + i -2][tableBorders[1] + j -1] = table2[i][j]
@@ -150,14 +149,71 @@ class XlsFile
 	  workbook.write(@path)
   end
 
-  def removeTable
+  def removeTable#(secondTablePath, sheet_num) 
+    book2 = Roo::Spreadsheet.open("test2.xls")
+    load_table(1,book2)
+
+    unless table[0] == table2[0]
+        puts "tabele nisu iste"
+        return
+    end
+
+    # p table
+    # p table2
+
+    secondTableRows = []
+
+    i = tableBorders[0]-1
+    j = 1
+        table.each do |row|
+            i+=1
+            if row == table2[j]
+                secondTableRows << i
+                j +=1
+            end        
+        end
+
+    workbook = Spreadsheet.open 'test.xls'
+    worksheet = workbook.worksheets[1]
+
+    for j in 0..secondTableRows.length()-1 do#kolona
+        worksheet.row(secondTableRows[j]-1).replace [""]
+    end    
+
+    workbook.write(@path)
 
   end
-
+ 
   def nilRowKiller
+    nilCounter = 0
+    rowCnt = -1
 
-  end
+    table.each do |row|#trazimo red koji ima nil u sebi
+        rowCnt += 1;
+        #puts row
+        if row.include? nil
+          #  puts "nasli nil u redu #{rowCnt}"
+            row.each do |cell|#kada nadjemo nil prodjemo i proverimo da li je ceo red nil
+                if cell == nil 
+                     nilCounter += 1    
+                end              
+            end
+        end
 
+        #puts "counter #{nilCounter} length #{table[0].length}"
+
+        if nilCounter ==  table[0].length#ceo red je nil, znaci da je ukrasni red i da treba da se skloni
+            table.delete_at(rowCnt)
+
+            column_table.each_value do |array| #nakon sto obrisemo iz matrice, obrisemo i iz column_table
+                array.delete_at(rowCnt-1)
+            end
+
+        end            
+        nilCounter = 0
+    end
+    
+end
 
 end
 
@@ -179,10 +235,17 @@ end
 
 x = XlsFile.new('test.xls')
 
-#  p x.table
-#  p x.column_table
 
-x.copyTable
+#x.copyTable
+#x.removeTable
+
+# p x.table
+# p x.column_table
+# puts"--------------"
+# x.nilRowKiller
+# p x.table
+# p x.column_table
+
 
 # p x.table[0][1]
 

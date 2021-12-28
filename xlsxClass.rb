@@ -145,9 +145,9 @@ class XlsxFile
         workbook = RubyXL::Parser.parse(@path)#ne zaboravi write
         worksheet = workbook[1]#DODAJ KOJI WORKSHEET ZELIS DA GLEDAS KOA LOCAL VARIJABLU
         width = table2[0].length
-        hight =  table2.length
+        height =  table2.length
 
-        for i in 1..hight-1 do#red
+        for i in 1..height-1 do#red
             for j in 0..width-1 do#kolona
                 worksheet.add_cell(tableBorders[2] + i -1, tableBorders[1] + j -1, table2[i][j])
             end            
@@ -165,17 +165,18 @@ class XlsxFile
             return
         end
 
-        p table
-        p table2
+        # p table
+        # p table2
 
         secondTableRows = []#redovi gde se nalazi tabela 2 u tabeli 1
 
         i = tableBorders[0]-1
+        j = 1
         table.each do |row|
             i+=1
-            if row == table2[1]
+            if row == table2[j]
                 secondTableRows << i
-                #puts "nasli ga u #{i}"
+                j +=1
             end
         end
 
@@ -184,7 +185,7 @@ class XlsxFile
         worksheet = workbook[1]
 
         for j in 0..secondTableRows.length() do#kolona
-            worksheet.delete_row(secondTableRows[0]-1)
+            worksheet.delete_row(secondTableRows[j]-1)#bilo 0 umesto j
         end            
 
         workbook.write(@path)  
