@@ -130,7 +130,7 @@ class XlsxFile
         @table.each(&block)
     end
 
-    def copyTable(secondTablePath) #9
+    def copyTable(secondTablePath) #9 
         book2 = Roo::Excelx.new(secondTablePath, {:expand_merged_ranges => true})
         load_table(1,book2)
 
@@ -143,7 +143,7 @@ class XlsxFile
         # p table2
 
         workbook = RubyXL::Parser.parse(@path)#ne zaboravi write
-        worksheet = workbook[1]
+        worksheet = workbook[1]#DODAJ KOJI WORKSHEET ZELIS DA GLEDAS KOA LOCAL VARIJABLU
         width = table2[0].length
         hight =  table2.length
 
@@ -190,7 +190,7 @@ class XlsxFile
         workbook.write(@path)  
     end
 
-    def nillRowKiller
+    def nilRowKiller
         nilCounter = 0
         rowCnt = -1
 
@@ -220,8 +220,6 @@ class XlsxFile
         end
         
     end
-
-
 end
 
 class Column < Array#6
@@ -240,12 +238,12 @@ end
 
 
 xlsx = XlsxFile.new('testFile1.xlsx')
-xlsx.nillRowKiller
+xlsx.nilRowKiller
 
 # p xlsx.table
 # p xlsx.column_table
 # puts "\n-----------------\n"
-# xlsx.nillRowKiller
+# xlsx.nilRowKiller
 # p xlsx.table
 # p xlsx.column_table
 
