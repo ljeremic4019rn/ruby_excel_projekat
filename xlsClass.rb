@@ -2,7 +2,7 @@
 require 'roo-xls'
 require 'spreadsheet'
 
-class XlsFile
+class Xls
   attr_accessor :path, :file, :table, :table2, :column_table, :row, :tableBorders
 
   def initialize(path)#1
@@ -119,8 +119,8 @@ class XlsFile
       @table.each(&block)
   end
 
-  def copyTable#(secondTablePath, sheet_num) 
-    book2 = Roo::Spreadsheet.open("test2.xls")
+  def copyTable(secondTablePath, sheet_num) 
+    book2 = Roo::Spreadsheet.open(secondTablePath)
     load_table(1,book2)
 
     unless table[0] == table2[0]
@@ -131,8 +131,8 @@ class XlsFile
     # p table
     # p table2
 
-    workbook = Spreadsheet.open 'test.xls'
-    worksheet = workbook.worksheets[1]
+    workbook = Spreadsheet.open @path
+    worksheet = workbook.worksheets[sheet_num]
     width = table2[0].length
     height =  table2.length
 
@@ -144,13 +144,11 @@ class XlsFile
 			 worksheet.rows[tableBorders[2] + i -2][tableBorders[1] + j -1] = table2[i][j]
         end            
     end
-
-
 	  workbook.write(@path)
   end
 
-  def removeTable#(secondTablePath, sheet_num) 
-    book2 = Roo::Spreadsheet.open("test2.xls")
+  def removeTable(secondTablePath, sheet_num) 
+    book2 = Roo::Spreadsheet.open(secondTablePath)
     load_table(1,book2)
 
     unless table[0] == table2[0]
@@ -173,8 +171,8 @@ class XlsFile
             end        
         end
 
-    workbook = Spreadsheet.open 'test.xls'
-    worksheet = workbook.worksheets[1]
+    workbook = Spreadsheet.open @path
+    worksheet = workbook.worksheets[sheet_num]
 
     for j in 0..secondTableRows.length()-1 do#kolona
         worksheet.row(secondTableRows[j]-1).replace [""]
@@ -233,7 +231,7 @@ class Column < Array
 
 end
 
-x = XlsFile.new('test.xls')
+#  x = Xls.new('test.xls')
 
 
 #x.copyTable
@@ -255,7 +253,7 @@ x = XlsFile.new('test.xls')
 #     p cell
 # end
 
-# p x.column_table["header1"]
+# p x.column_table["druga"]
 # p x.column_table["header1"][0]
 
 # p x.header1

@@ -9,7 +9,7 @@ require 'rubyXL/convenience_methods/font'
 require 'rubyXL/convenience_methods/workbook'
 require 'rubyXL/convenience_methods/worksheet'
 
-class XlsxFile
+class Xlsx
     attr_accessor :path, :file, :table, :table2, :column_table, :row, :tableBorders
 
     def initialize(path)#1
@@ -130,7 +130,7 @@ class XlsxFile
         @table.each(&block)
     end
 
-    def copyTable(secondTablePath) #9 
+    def copyTable(secondTablePath, sheet_num) #9 
         book2 = Roo::Excelx.new(secondTablePath, {:expand_merged_ranges => true})
         load_table(1,book2)
 
@@ -142,21 +142,22 @@ class XlsxFile
         # p table
         # p table2
 
+
         workbook = RubyXL::Parser.parse(@path)#ne zaboravi write
-        worksheet = workbook[1]#DODAJ KOJI WORKSHEET ZELIS DA GLEDAS KOA LOCAL VARIJABLU
+        worksheet = workbook[sheet_num]#DODAJ KOJI WORKSHEET ZELIS DA GLEDAS KOA LOCAL VARIJABLU
         width = table2[0].length
         height =  table2.length
+
 
         for i in 1..height-1 do#red
             for j in 0..width-1 do#kolona
                 worksheet.add_cell(tableBorders[2] + i -1, tableBorders[1] + j -1, table2[i][j])
             end            
         end
-
         workbook.write(@path)        
     end
 
-    def removeTable(secondTablePath)#10
+    def removeTable(secondTablePath, sheet_num)#10
         book2 = Roo::Excelx.new(secondTablePath, {:expand_merged_ranges => true})
         load_table(1,book2)
 
@@ -165,10 +166,11 @@ class XlsxFile
             return
         end
 
-        # p table
-        # p table2
+        p table
+        p table2
 
         secondTableRows = []#redovi gde se nalazi tabela 2 u tabeli 1
+        asdf = 0
 
         i = tableBorders[0]-1
         j = 1
@@ -176,16 +178,17 @@ class XlsxFile
             i+=1
             if row == table2[j]
                 secondTableRows << i
+                asdf = i
                 j +=1
             end
         end
 
-
-        workbook = RubyXL::Parser.parse(@path)#ne zaboravi write
+        workbook = RubyXL::Parser.parse(@path)
         worksheet = workbook[1]
 
         for j in 0..secondTableRows.length() do#kolona
-            worksheet.delete_row(secondTableRows[j]-1)#bilo 0 umesto j
+            # worksheet.delete_row(secondTableRows[j]-1)#stari koji je radio pre plugin updatea
+            worksheet.delete_row(secondTableRows[0]-1)
         end            
 
         workbook.write(@path)  
@@ -238,8 +241,8 @@ class Column < Array#6
 end
 
 
-xlsx = XlsxFile.new('testFile1.xlsx')
-xlsx.nilRowKiller
+  xlsx = Xlsx.new('testFile1.xlsx')
+# xlsx.nilRowKiller
 
 # p xlsx.table
 # p xlsx.column_table
@@ -249,7 +252,7 @@ xlsx.nilRowKiller
 # p xlsx.column_table
 
 
-# p xlsx.row(1)
+#  p xlsx.row(1)
 
 # xlsx.each do |cell|
 #     p cell
@@ -258,5 +261,5 @@ xlsx.nilRowKiller
 # p xlsx.column_table["prva"]
 # p xlsx.column_table["prva"][3]
 
-# xlsx.copyTable('testFile2.xlsx')
-# xlsx.removeTable('testFile2.xlsx')
+# xlsx.copyTable('testFile2.xlsx', 1)
+#  xlsx.removeTable('testFile2.xlsx', 1)
