@@ -10,7 +10,7 @@ require 'rubyXL/convenience_methods/workbook'
 require 'rubyXL/convenience_methods/worksheet'
 
 class Xlsx
-    attr_accessor :path, :file, :table, :table2, :column_table, :row, :tableBorders
+    attr_accessor :path, :file, :table, :table2, :column_table, :row, :tableBorders, :displace
 
     def initialize(path)#1
         @path = path
@@ -19,6 +19,7 @@ class Xlsx
         @table2 = nil
         @column_table = nil
         @row = nil
+        @displace = nil
         @tableBorders =  Array.new(3)#prvi red, prva kolona, poslednji red, poslednja kolona
 
         self.load_column_table
@@ -54,6 +55,7 @@ class Xlsx
 
                         if (sh.formula(row, column).to_s.include? "SUBTOTAL") || (sh.formula(row, column).to_s.include? "SUM")#TOTAL #8
                             flag = 1
+                            @displace = 1
                         end
 
                         colCnt += 1
@@ -148,13 +150,19 @@ class Xlsx
         width = table2[0].length
         height =  table2.length
 
+  
+        # if displace == 1        
+        #     worksheet.delete_row(tableBorders[2]-1) #! ovo radi, ali se crashuje excel i mora da se sacuva opet
+        # end
+        # workbook.write(@path)  
+
 
         for i in 1..height-1 do#red
             for j in 0..width-1 do#kolona
                 worksheet.add_cell(tableBorders[2] + i -1, tableBorders[1] + j -1, table2[i][j])
             end            
         end
-        workbook.write(@path)        
+         workbook.write(@path)        
     end
 
     def removeTable(secondTablePath, sheet_num)#10
