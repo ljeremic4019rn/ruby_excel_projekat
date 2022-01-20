@@ -249,7 +249,7 @@ class Column < Array#6
 end
 
 
-  xlsx = Xlsx.new('testFile1.xlsx')
+#   xlsx = Xlsx.new('testFile1.xlsx')
 # xlsx.nilRowKiller
 
 # p xlsx.table
